@@ -33,9 +33,9 @@ export default class SocketUtil {
   static subIds = [];
   static subscribe() {
     SocketUtil.subIds = [
-      SocketUtil.subLiveEvent1(),
-      SocketUtil.subLiveEvent2(),
-      SocketUtil.subLiveEvent3(),
+      SocketUtil.subEvent1(),
+      SocketUtil.subEvent2(),
+      SocketUtil.subEvent3(),
     ];
   }
 
@@ -53,8 +53,8 @@ export default class SocketUtil {
    * 定义订阅事件1
    *
    */
-  static subLiveEvent1() {
-    let topic = "event_1";
+  static subEvent1() {
+    let topic = "event_1"; //topic 是stomp客户端和服务端通讯的重要标识,需要约定一致(xxx.xx.x 或者 xxx_xx_x)
     return SocketService.getInstance().subscribe(
       topic,
       (res) => {
@@ -69,7 +69,7 @@ export default class SocketUtil {
    * 定义订阅事件2
    *
    */
-  static subLiveEvent2() {
+  static subEvent2() {
     let topic = "event_2";
 
     return SocketService.getInstance().subscribe(
@@ -86,7 +86,7 @@ export default class SocketUtil {
    * 定义订阅事件3
    *
    */
-  static subLiveEvent3() {
+  static subEvent3() {
     let topic = "event_3";
 
     return SocketService.getInstance().subscribe(
