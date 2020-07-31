@@ -2,6 +2,10 @@ import SocketService from "./SocketService";
 import PublicEvent from "../event/publicEvent";
 
 export default class SocketUtil {
+
+  /**
+   * 初始化连接socket
+   */
   static initWebSocket() {
     SocketService.getInstance({
       // 特殊配置,一般不用修改
@@ -15,8 +19,8 @@ export default class SocketUtil {
   }
 
   /**
-   *
-   * @param {object} config 初始化配置参数
+   *初始化配置参数
+   * @param {object} config 配置参数
    */
   static initSocketParams(config) {
     SocketService.getInstance().init({
@@ -40,7 +44,7 @@ export default class SocketUtil {
   }
 
   /**
-   * 取消订阅
+   * 注销订阅
    */
   static unsubscribe() {
     SocketUtil.subIds.forEach((item) => {

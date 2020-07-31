@@ -11,11 +11,13 @@ Stomp.clearInterval = function(id) {
 };
 
 export default class SocketService {
+
+  //config 配置,支持外部写入
   config = {
     host: "wss://xxx.com/ws",
     ping: {
       open: true,
-      timeout: 2000,
+      timeout: 10000,
     },
     headers: {
       token: "",
@@ -29,8 +31,10 @@ export default class SocketService {
   timer;
   pingTimer;
 
+  //SocketService 实例
   static instance;
 
+  //会被包装成客户端代理,未定义方法,会分配默认
   ws = {
     send: this.sendSocketMessage.bind(this),
     onopen: null,
@@ -39,12 +43,17 @@ export default class SocketService {
   };
 
   constructor() {
+    //初始化相关监听方法
     this.onSocketOpen();
     this.onSocketMessage();
     this.onSocketClose();
     this.onNetworkStatusChange();
   }
 
+  /**
+   * 获取SocketService实例
+   * @param {object} config 外部传入的config 配置(可选参数)
+   */
   static getInstance(config = {}) {
     if (!SocketService.instance) {
       SocketService.instance = new SocketService();
@@ -53,11 +62,19 @@ export default class SocketService {
     return SocketService.instance;
   }
 
+  /**
+   * 初始化config配置
+   * @param {object} config 外部传入的config 配置
+   */
   init(config = {}) {
     this.doConfig(config);
     return this;
   }
 
+  /**
+   * 执行config合并
+   * @param {object} config 
+   */
   doConfig(config) {
     let header = this.config.header;
     if (!config) return;
@@ -69,6 +86,9 @@ export default class SocketService {
     return this;
   }
 
+  /**
+   * 获取客户端对象
+   */
   getClient() {
     return this.stompClient;
   }
@@ -97,6 +117,9 @@ export default class SocketService {
     });
   }
 
+  /**
+   * 监听 WebSocket 接受到服务器的消息事件
+   */
   onSocketMessage() {
     wx.onSocketMessage((res) => {
       this.ws.onmessage && this.ws.onmessage(res);
@@ -119,6 +142,9 @@ export default class SocketService {
     });
   }
 
+  /**
+   * 监听 WebSocket 连接关闭事件
+   */
   onSocketClose() {
     wx.onSocketClose((res) => {
       console.log("WebSocket 已关闭！");
@@ -128,9 +154,15 @@ export default class SocketService {
     });
   }
 
+
+  /**
+   * 关闭 WebSocket 连接
+   */
   closeSocket() {
     wx.closeSocket();
   }
+
+
 
   /**
    * 连接websocket
@@ -174,6 +206,9 @@ export default class SocketService {
     this.ping();
   }
 
+  /**
+   * 心跳检测
+   */
   ping() {
     if (!this.config.ping.open) return;
     this.pingTimer && clearInterval(this.pingTimer);
@@ -188,6 +223,9 @@ export default class SocketService {
     }, this.config.ping.timeout);
   }
 
+  /**
+   * 重连
+   */
   reconnect() {
     if (this.lockReconnect) return;
     this.lockReconnect = true;
@@ -195,13 +233,16 @@ export default class SocketService {
     this.timer && clearTimeout(this.timer);
     this.timer = setTimeout(() => {
       this.connect(() => {
-        //重连成功后绑定直播间订阅
+        //重连成功后重新注册订阅事件
         SocketUtil.subscribe();
       }, true);
       this.lockReconnect = false;
     }, 3000);
   }
 
+  /**
+   * 断开连接
+   */
   disconnect() {
     if (this.stompClient != null) {
       console.log("stompClient.disconnect");
@@ -210,6 +251,9 @@ export default class SocketService {
     this.cleanConnect();
   }
 
+  /**
+   * 清除连接
+   */
   cleanConnect() {
     this.stompClient = null;
     this.pingTimer && clearTimeout(this.pingTimer);
@@ -217,6 +261,14 @@ export default class SocketService {
     console.log("cleanConnet");
   }
 
+  /**
+   * 订阅topic
+   * @param {*} pre 
+   * @param {*} topic 
+   * @param {*} func 
+   * @param {*} autoPublish 
+   * @param {*} publishTopic 
+   */
   subTopic(pre, topic, func, autoPublish = false, publishTopic = null) {
     if (
       this.config.headers &&
@@ -229,6 +281,13 @@ export default class SocketService {
     this.subscribe(topic, func, autoPublish, publishTopic);
   }
 
+  /**
+   * 客户端注册订阅事件
+   * @param {*} topic 
+   * @param {*} func 
+   * @param {*} autoPublish 
+   * @param {*} publishTopic 
+   */
   subscribe(topic, func, autoPublish = false, publishTopic = null) {
     if (!this.stompClient) return false;
     //区分不同订阅消息的唯一标识,虽然storm.js源码中当id不存在时会自动给添加,但实际中发现,多个订阅的时候subId会共享,因此在这里提前声明
@@ -248,6 +307,10 @@ export default class SocketService {
     );
   }
 
+/**
+ * 注销客户端订阅
+ * @param {string} subId 订阅的事件id
+ */
   unsubscribe(subId) {
     if (!subId) return;
     subId.unsubscribe();
@@ -277,8 +340,9 @@ export default class SocketService {
   onNetworkStatusChange() {
     wx.onNetworkStatusChange((res) => {
       if (res.isConnected && this.stompClient != null) {
-        //重连之前先取消直播间订阅
+        //重连之前先取消订阅
         SocketUtil.unsubscribe();
+        //执行重连
         this.reconnect();
       }
     });
